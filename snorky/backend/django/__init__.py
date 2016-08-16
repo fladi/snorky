@@ -87,11 +87,10 @@ def handle_pre_save(sender, instance, raw, using, update_fields, **kwargs):
 
     If the item did exist before, stores an update delta in ``_snorky_delta``.
     """
-    existent_object_query = sender.objects.filter(pk=instance.pk)
-    created = (len(existent_object_query) == 0)
-    if not created:
+    try:
+        existent_object = sender.objects.get(pk=instance.pk)
         new_data = instance.jsonify()
-        old_data = existent_object_query[0].jsonify()
+        old_data = existent_object.jsonify()
         delta = {
             "type": "update",
             "model": sender.__name__,
@@ -100,6 +99,8 @@ def handle_pre_save(sender, instance, raw, using, update_fields, **kwargs):
         }
         # post_save will send this delta
         instance._snorky_delta = delta
+    except sender.DoesNotExist:
+        pass
 
 def handle_pre_delete(sender, instance, using, **kwargs):
     """Called when a subscribable model is about to be deleted.
